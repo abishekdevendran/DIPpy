@@ -37,6 +37,9 @@ def create_image_processing_menu():
     image_menu.add_command(label="Dilation", command=dilate_image)
     image_menu.add_command(label="Canny Edge", command=edge_detection)
     image_menu.add_command(label="Segmentation", command=segmentation)
+    image_menu.add_separator()  # Add a separator before the subheading
+    image_menu.add_command(label="File Ops", state="disabled")
+    image_menu.add_command(label="Save", command=save_image)
     # image_menu.add_command(label="Invert", command=invert_image)
     menu_bar.add_cascade(label="Image", menu=image_menu)
 
@@ -195,6 +198,10 @@ def segmentation():
     # canvas.delete("all")
     # canvas.config(width=image.width, height=image.height)
     # canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
+
+def save_image():
+    global image
+    image.save("output.png")
 
 menu_bar = tk.Menu(root)
 
