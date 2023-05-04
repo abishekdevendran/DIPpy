@@ -28,6 +28,19 @@ def open_file():
 
         create_history_menu()
 
+def create_slider_modal(title="Slider Modal", prompt="Slider Value: ",on_slider_change=None, on_settle=None, min=0, max=100):
+    def settleHandler():
+        on_settle()
+        slider_modal.destroy()
+    slider_modal = tk.Toplevel()
+    slider_modal.title(title)
+    tk.Label(slider_modal, text=prompt).pack(padx=10, pady=10)
+    slider = tk.Scale(slider_modal, from_=min, to=max, orient=tk.HORIZONTAL, length=200, command=on_slider_change)
+    slider.pack(padx=10, pady=10)
+
+    ok_button = tk.Button(slider_modal, text="OK", command=settleHandler)
+    ok_button.pack(padx=10, pady=10)
+
 def create_history_menu():
     global history_menu, imageHistory
     history_menu = tk.Menu(menu_bar, tearoff=0)
@@ -104,16 +117,30 @@ def double_image_size():
     update_history_menu()
 
 def gaussian_blur():
-    global image, image_tk
-    img_cv2 = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-    img_cv2_blur = cv2.GaussianBlur(img_cv2, (5, 5), 0)
-    image = Image.fromarray(cv2.cvtColor(img_cv2_blur, cv2.COLOR_BGR2RGB))
-    image_tk = ImageTk.PhotoImage(image)
-    canvas.delete("all")
-    canvas.config(width=image.width, height=image.height)
-    canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
-    imageHistory.append({ "image": copy.deepcopy(image), "ops": "Gaussian Blur" })
-    update_history_menu()
+    def gaussian_blur_callback(value):
+        # make value odd, only odd sized kernels allowed
+        if int(value) % 2 == 0:
+            value = int(value) + 1
+        global image, image_tk, temp_image, temp_image_tk
+        # do temp image processing
+        img_cv2 = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+        img_cv2_blur = cv2.GaussianBlur(img_cv2, (int(value), int(value)), 0)
+        temp_image = Image.fromarray(cv2.cvtColor(img_cv2_blur, cv2.COLOR_BGR2RGB))
+        temp_image_tk = ImageTk.PhotoImage(temp_image)
+        canvas.delete("all")
+        canvas.config(width=temp_image.width, height=temp_image.height)
+        canvas.create_image(0, 0, anchor=tk.NW, image=temp_image_tk)
+
+    def settleHandler():
+        global imageHistory, temp_image
+        imageHistory.append({ "image": copy.deepcopy(temp_image), "ops": "Gaussian Blur" })
+        update_history_menu()
+    
+    # get min and max kernel size depending on image size
+    width, height = image.size
+    min_kernel_size = 1
+    max_kernel_size = min(width, height)
+    create_slider_modal("Gaussian Blur", "Enter kernel size", gaussian_blur_callback, settleHandler, min_kernel_size, max_kernel_size)
 
 def threshold():
     global image, image_tk
