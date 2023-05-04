@@ -3,9 +3,12 @@ from tkinter import filedialog
 from PIL import Image, ImageTk
 import cv2
 import numpy as np
+import copy
 
 root = tk.Tk()
 root.title("Black Room")
+
+imageHistory = []
 
 def open_file():
     file_path = filedialog.askopenfilename()
@@ -16,8 +19,42 @@ def open_file():
         canvas.delete("all")
         canvas.config(width=image.width, height=image.height)
         canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
+
+        # Clear the history if a new image is loaded
+        imageHistory.clear()
+        imageHistory.append({ "image": copy.deepcopy(image), "ops": "Loaded Image" })
         
         create_image_processing_menu()
+
+        create_history_menu()
+
+def create_history_menu():
+    global history_menu, imageHistory
+    history_menu = tk.Menu(menu_bar, tearoff=0)
+    for i in range(len(imageHistory)):
+        history_menu.add_command(label=imageHistory[i]["ops"], command=lambda i=i: show_history(i))
+    # make last item in history menu disabled
+    history_menu.entryconfig(len(imageHistory)-1, state="disabled")
+    menu_bar.add_cascade(label="History", menu=history_menu)
+
+def update_history_menu():
+    global history_menu, imageHistory
+    history_menu.delete(0, tk.END)
+    for i in range(len(imageHistory)):
+        history_menu.add_command(label=imageHistory[i]["ops"], command=lambda i=i: show_history(i))
+    # make last item in history menu disabled
+    history_menu.entryconfig(len(imageHistory)-1, state="disabled")
+
+def show_history(index):
+    global image, image_tk, imageHistory
+    image = imageHistory[index]["image"]
+    # clear the history after the selected image
+    imageHistory[index + 1:] = []
+    image_tk = ImageTk.PhotoImage(image)
+    canvas.delete("all")
+    canvas.config(width=image.width, height=image.height)
+    canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
+    update_history_menu()
 
 def create_image_processing_menu():
     global image_menu
@@ -40,7 +77,6 @@ def create_image_processing_menu():
     image_menu.add_separator()  # Add a separator before the subheading
     image_menu.add_command(label="File Ops", state="disabled")
     image_menu.add_command(label="Save", command=save_image)
-    # image_menu.add_command(label="Invert", command=invert_image)
     menu_bar.add_cascade(label="Image", menu=image_menu)
 
 def grayscale():
@@ -52,6 +88,8 @@ def grayscale():
     canvas.delete("all")
     canvas.config(width=image.width, height=image.height)
     canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
+    imageHistory.append({ "image": copy.deepcopy(image), "ops": "Grayscale" })
+    update_history_menu()
 
 def double_image_size():
     global image, image_tk
@@ -62,7 +100,8 @@ def double_image_size():
     canvas.delete("all")
     canvas.config(width=doubled_width, height=doubled_height)
     canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
-
+    imageHistory.append({ "image": copy.deepcopy(image), "ops": "Bilinear Interpolation" })
+    update_history_menu()
 
 def gaussian_blur():
     global image, image_tk
@@ -73,6 +112,8 @@ def gaussian_blur():
     canvas.delete("all")
     canvas.config(width=image.width, height=image.height)
     canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
+    imageHistory.append({ "image": copy.deepcopy(image), "ops": "Gaussian Blur" })
+    update_history_menu()
 
 def threshold():
     global image, image_tk
@@ -84,6 +125,8 @@ def threshold():
     canvas.delete("all")
     canvas.config(width=image.width, height=image.height)
     canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
+    imageHistory.append({ "image": copy.deepcopy(image), "ops": "Thresholding" })
+    update_history_menu()
 
 def rotate():
     global image, image_tk
@@ -94,6 +137,8 @@ def rotate():
     canvas.delete("all")
     canvas.config(width=image.width, height=image.height)
     canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
+    imageHistory.append({ "image": copy.deepcopy(image), "ops": "Rotate" })
+    update_history_menu()
 
 def flip_image():
     global image, image_tk
@@ -102,6 +147,8 @@ def flip_image():
     image_tk = ImageTk.PhotoImage(image)
     canvas.delete("all")
     canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
+    imageHistory.append({ "image": copy.deepcopy(image), "ops": "Flip" })
+    update_history_menu()
 
 def sharpen_image():
     global image, image_tk
@@ -110,6 +157,8 @@ def sharpen_image():
     image_tk = ImageTk.PhotoImage(Image.fromarray(sharpened_image))
     canvas.delete("all")
     canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
+    imageHistory.append({ "image": copy.deepcopy(image), "ops": "Sharpen" })
+    update_history_menu()
 
 def equalize_histogram():
     global image, image_tk
@@ -121,21 +170,8 @@ def equalize_histogram():
     canvas.delete("all")
     canvas.config(width=image.width, height=image.height)
     canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
-
-
-# def morphological_operations():
-#     global image, image_tk
-#     img_cv2 = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-#     img_cv2_gray = cv2.cvtColor(img_cv2, cv2.COLOR_BGR2GRAY)
-#     _, img_cv2_thresh = cv2.threshold(img_cv2_gray, 127, 255, cv2.THRESH_BINARY)
-#     kernel = np.ones((5,5), np.uint8)
-#     img_cv2_eroded = cv2.erode(img_cv2_thresh, kernel, iterations=1)
-#     img_cv2_dilated = cv2.dilate(img_cv2_thresh, kernel, iterations=1)
-#     image = Image.fromarray(cv2.cvtColor(img_cv2_eroded, cv2.COLOR_BGR2RGB))
-#     image_tk = ImageTk.PhotoImage(image)
-#     canvas.delete("all")
-#     canvas.config(width=image.width, height=image.height)
-#     canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
+    imageHistory.append({ "image": copy.deepcopy(image), "ops": "Equalize Histogram" })
+    update_history_menu()
 
 def erode_image():
     global image, image_tk
@@ -149,6 +185,8 @@ def erode_image():
     canvas.delete("all")
     canvas.config(width=image.width, height=image.height)
     canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
+    imageHistory.append({ "image": copy.deepcopy(image), "ops": "Erode" })
+    update_history_menu()
 
 def dilate_image():
     global image, image_tk
@@ -162,6 +200,8 @@ def dilate_image():
     canvas.delete("all")
     canvas.config(width=image.width, height=image.height)
     canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
+    imageHistory.append({ "image": copy.deepcopy(image), "ops": "Dilate" })
+    update_history_menu()
 
 def edge_detection():
     global image, image_tk
@@ -170,6 +210,8 @@ def edge_detection():
     image_tk = ImageTk.PhotoImage(image)
     canvas.delete("all")
     canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
+    imageHistory.append({ "image": copy.deepcopy(image), "ops": "Edge Detection" })
+    update_history_menu()
 
 def segmentation():
     global image, image_tk
@@ -183,21 +225,8 @@ def segmentation():
     canvas.delete("all")
     canvas.config(width=image.width, height=image.height)
     canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
-    # Using kmeans from sklearn
-    # img_cv2 = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-    # img_cv2_gray = cv2.cvtColor(img_cv2, cv2.COLOR_BGR2GRAY)
-    # img_cv2_gray = np.float32(img_cv2_gray)
-    # criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
-    # k = 2
-    # ret, label, center = cv2.kmeans(img_cv2_gray, k, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
-    # center = np.uint8(center)
-    # res = center[label.flatten()]
-    # res2 = res.reshape((img_cv2_gray.shape))
-    # image = Image.fromarray(cv2.cvtColor(res2, cv2.COLOR_BGR2RGB))
-    # image_tk = ImageTk.PhotoImage(image)
-    # canvas.delete("all")
-    # canvas.config(width=image.width, height=image.height)
-    # canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
+    imageHistory.append({ "image": copy.deepcopy(image), "ops": "Segmentation" })
+    update_history_menu()
 
 def save_image():
     global image
