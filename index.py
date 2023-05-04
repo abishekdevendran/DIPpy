@@ -140,7 +140,7 @@ def gaussian_blur():
     width, height = image.size
     min_kernel_size = 1
     max_kernel_size = min(width, height)
-    create_slider_modal("Gaussian Blur", "Enter kernel size", gaussian_blur_callback, settleHandler, min_kernel_size, max_kernel_size)
+    create_slider_modal("Gaussian Blur", "Kernel size:", gaussian_blur_callback, settleHandler, min_kernel_size, max_kernel_size)
 
 def threshold():
     global image, image_tk
@@ -201,34 +201,53 @@ def equalize_histogram():
     update_history_menu()
 
 def erode_image():
-    global image, image_tk
-    img_cv2 = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-    img_cv2_gray = cv2.cvtColor(img_cv2, cv2.COLOR_BGR2GRAY)
-    _, img_cv2_thresh = cv2.threshold(img_cv2_gray, 127, 255, cv2.THRESH_BINARY)
-    kernel = np.ones((5,5), np.uint8)
-    img_cv2_eroded = cv2.erode(img_cv2_thresh, kernel, iterations=1)
-    image = Image.fromarray(cv2.cvtColor(img_cv2_eroded, cv2.COLOR_BGR2RGB))
-    image_tk = ImageTk.PhotoImage(image)
-    canvas.delete("all")
-    canvas.config(width=image.width, height=image.height)
-    canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
-    imageHistory.append({ "image": copy.deepcopy(image), "ops": "Erode" })
-    update_history_menu()
+    def erosion_callback(value):
+        global image, image_tk, temp_image, temp_image_tk
+        # do temp image processing
+        img_cv2 = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+        img_cv2_gray = cv2.cvtColor(img_cv2, cv2.COLOR_BGR2GRAY)
+        kernel = np.ones((int(value),int(value)),np.uint8)
+        img_cv2_eroded = cv2.erode(img_cv2_gray, kernel, iterations=1)
+        temp_image = Image.fromarray(cv2.cvtColor(img_cv2_eroded, cv2.COLOR_GRAY2RGB))
+        temp_image_tk = ImageTk.PhotoImage(temp_image)
+        canvas.delete("all")
+        canvas.config(width=temp_image.width, height=temp_image.height)
+        canvas.create_image(0, 0, anchor=tk.NW, image=temp_image_tk)
+    
+    def settleHandler():
+        global image, image_tk, temp_image, temp_image_tk
+        image = copy.deepcopy(temp_image)
+        canvas.delete("all")
+        canvas.config(width=image.width, height=image.height)
+        canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
+        imageHistory.append({ "image": copy.deepcopy(image), "ops": "Erosion" })
+        update_history_menu()
+    
+    create_slider_modal("Erosion", "Erosion kernel:", erosion_callback, settleHandler)
 
 def dilate_image():
-    global image, image_tk
-    img_cv2 = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-    img_cv2_gray = cv2.cvtColor(img_cv2, cv2.COLOR_BGR2GRAY)
-    _, img_cv2_thresh = cv2.threshold(img_cv2_gray, 127, 255, cv2.THRESH_BINARY)
-    kernel = np.ones((5,5), np.uint8)
-    img_cv2_dilated = cv2.dilate(img_cv2_thresh, kernel, iterations=1)
-    image = Image.fromarray(cv2.cvtColor(img_cv2_dilated, cv2.COLOR_BGR2RGB))
-    image_tk = ImageTk.PhotoImage(image)
-    canvas.delete("all")
-    canvas.config(width=image.width, height=image.height)
-    canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
-    imageHistory.append({ "image": copy.deepcopy(image), "ops": "Dilate" })
-    update_history_menu()
+    def dilation_callback(value):
+        global image, image_tk, temp_image, temp_image_tk
+        # do temp image processing
+        img_cv2 = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+        img_cv2_gray = cv2.cvtColor(img_cv2, cv2.COLOR_BGR2GRAY)
+        kernel = np.ones((int(value),int(value)),np.uint8)
+        img_cv2_dilated = cv2.dilate(img_cv2_gray, kernel, iterations=1)
+        temp_image = Image.fromarray(cv2.cvtColor(img_cv2_dilated, cv2.COLOR_GRAY2RGB))
+        temp_image_tk = ImageTk.PhotoImage(temp_image)
+        canvas.delete("all")
+        canvas.config(width=temp_image.width, height=temp_image.height)
+        canvas.create_image(0, 0, anchor=tk.NW, image=temp_image_tk)
+    def settleHandler():
+        global image, image_tk, temp_image, temp_image_tk
+        image = copy.deepcopy(temp_image)
+        canvas.delete("all")
+        canvas.config(width=image.width, height=image.height)
+        canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
+        imageHistory.append({ "image": copy.deepcopy(image), "ops": "Dilation" })
+        update_history_menu()
+    
+    create_slider_modal("Dilation", "Dilation kernel:", dilation_callback, settleHandler)
 
 def edge_detection():
     global image, image_tk
